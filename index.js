@@ -1,48 +1,45 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys')
-const express = require('express')
-const fs = require('fs')
 const pino = require('pino')
-const app = express()
-const PORT = process.env.PORT || 10000
 
-const PHONE = '258872698781'
-
-if (fs.existsSync('./auth_info_baileys')) {
-    fs.rmSync('./auth_info_baileys', { recursive: true, force: true })
-    console.log('SESSAO ANTIGA APAGADA - GERANDO NOVA PARA ' + PHONE)
-}
-
-app.get("/", (req, res) => res.send(`SHARVIS 77 PRO ON ${PHONE} - ONLINE`))
+const DONO_NOME = "Leønide Antonio Lâmina"
+const DONO_NUM = "258852223969"
+const NUM_PAREAMENTO = "258852223969" // TEU NÚMERO SEM O +
 
 async function startBot() {
-    const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys')
-    const sock = makeWASocket({
-        auth: state,
-        logger: pino({ level: 'silent' }),
-        printQRInTerminal: false,
-        browser: ["Ubuntu", "Chrome", "20.0.04"]
-    })
+    const { state, saveCreds } = await useMultiFileAuthState('auth')
+    const sock = makeWASocket({ auth: state, logger: pino({ level: 'silent' }), printQRInTerminal: false, browser: ["Sharvis V7", "Chrome", "1.0"] })
 
-    if (!sock.authState.creds.registered) {
+    if(!sock.authState.creds.registered) {
         setTimeout(async () => {
-            try {
-                const code = await sock.requestPairingCode(PHONE)
-                console.log(`\n====== CODIGO UNICO: ${code} ======\n`)
-            } catch (e) {
-                console.log("Erro ao gerar:", e.message)
-            }
-        }, 8000)
+            let code = await sock.requestPairingCode(NUM_PAREAMENTO)
+            console.log(`\n👑 TEU CÓDIGO DE PAREAMENTO: ${code}\nVai no WhatsApp > Aparelhos conectados > Conectar com número de telefone > Digita ${code}\n`)
+        }, 3000)
     }
 
     sock.ev.on('creds.update', saveCreds)
-    sock.ev.on('connection.update', (u) => {
-        if (u.connection === 'open') console.log('CONECTADO COM SUCESSO NO ' + PHONE)
-        if (u.connection === 'close') {
-            console.log('Conexao fechada, tentando de novo...')
-            setTimeout(startBot, 5000)
+    sock.ev.on('connection.update', (update) => {
+        const { connection } = update
+        if(connection === 'open') console.log(`👑 BOT DO ${DONO_NOME} ONLINE!`)
+        if(connection === 'close') startBot()
+    })
+
+    sock.ev.on('messages.upsert', async ({ messages }) => {
+        const m = messages[0]
+        if(!m.message || m.key.fromMe) return
+        const from = m.key.remoteJid
+        const body = m.message.conversation || m.message.extendedTextMessage?.text || ""
+        if(!body.startsWith('.')) return
+        const cmd = body.slice(1).toLowerCase().split(' ')[0]
+
+        if(['dono','criador'].includes(cmd)) {
+            await sock.sendMessage(from, { text: `👑 DONO: ${DONO_NOME}\n📱 +${DONO_NUM}\nwa.me/${DONO_NUM}` }, { quoted: m })
+        }
+        if(cmd === 'menu') {
+            await sock.sendMessage(from, { text: `╭─ SHARVIS REAL V7 ─\n│ 👑 Dono: ${DONO_NOME}\n╰───\n.dono .menu .ping .todos .abrir .fechar .alugar` }, { quoted: m })
+        }
+        if(cmd === 'ping') {
+            await sock.sendMessage(from, { text: `🏓 Online! Bot do ${DONO_NOME}` }, { quoted: m })
         }
     })
 }
-
 startBot()
-app.listen(PORT, () => console.log(`Web ON ${PORT}`))
