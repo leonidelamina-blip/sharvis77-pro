@@ -1,14 +1,9 @@
 {
-  "name": "sharvis-v7",
+  "name": "sharvis-vendas",
   "version": "1.0.0",
-  "description": "Sharvis V7 BOT",
   "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.7.11",
-    "pino": "^8.19.0",
+    "@whiskeysockets/baileys": "^6.7.0",
     "qrcode-terminal": "^0.12.0"
   }
 }
